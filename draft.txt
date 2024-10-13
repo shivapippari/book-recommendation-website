@@ -1,0 +1,675 @@
+  Function to fetch books
+  const fetchBooks = async () => {
+    try {
+     // Set loading to true
+      const response = await fetch('http://localhost:5000/api/books');
+      if (!response.ok) {
+        throw new Error('Failed to fetch books');
+      }
+      const data = await response.json();
+      setBooks(data);
+    } catch (error) {
+      console.error('Error fetching books:', error);
+    } finally {
+      setIsLoading(false); // Set loading to false after fetching
+    }
+  };
+
+   useEffect(() => {
+    fetchBooks();
+  }, []);
+
+
+
+  full app.js-->
+  import React, { useEffect, useState } from 'react';
+import './App.css';
+
+function App() {
+  const [bookName, setBookName] = useState('');
+  const [recommendations, setRecommendations] = useState([]);
+  const [books, setBooks] = useState([]);
+  const [isLoading, setIsLoading] = useState(false); // Track loading state
+
+
+
+  // Fetch books on component mount
+  // Empty dependency array ensures this runs only once on mount
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      //setIsLoading(true);
+      const response = await fetch('http://localhost:5000/api/recommendations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ bookName }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch recommendations');
+      }
+
+      const data = await response.json();
+      setRecommendations(data.recommendations);
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+    }
+  };
+
+  return (
+    <div className="App">
+      <header>
+        <h1>BookQuery</h1>
+      </header>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={bookName}
+          onChange={(e) => setBookName(e.target.value)}
+          placeholder="Enter book name"
+        />
+        <button type="submit">Submit</button>
+      </form>
+
+      {/* Recommendation section */}
+      <div className="book-list">
+        {isLoading ? (
+          <p>Loading books...</p>
+        ) : (
+          <ul>
+            {recommendations.map((book, index) => (
+              <div key={index} className="book-item">
+                <img src={book.image_url} alt={book.title} />
+                <h3>{book.title}</h3>
+              </div>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
+app.css-->
+
+/* App.css */
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f0f2f5;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+header {
+  background-color: #343a40;
+  color: #fff;
+  padding: 20px;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+form {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  margin-top: -1px;
+}
+
+input {
+  width: calc(100% - 22px);
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.recommendations {
+  background-color: #fff;
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+}
+
+.recommendations ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendations li {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.recommendations li:last-child {
+  border-bottom: none;
+}
+
+.book-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.book-item {
+  display: inline-block; /* or display: flex; */
+  margin: 10px;
+  text-align: center;
+  align-items: center;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 10px;
+  padding: 10px;
+  text-align: center;
+  height : 300px;
+  width: 150px;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.book-item img {
+  border-radius: 4px;
+  height: 200px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.book-item h3 {
+  font-size: 1rem;
+  margin: 10px 0 0;
+}
+
+
+backend --> 
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const { spawn } = require('child_process');
+const fs = require('fs');
+const csv = require('csv-parser');
+const app = express();
+const port = 5000;
+
+app.use(cors());
+app.use(bodyParser.json());
+
+app.get('/api/books', (req, res) => {
+  const results = [];
+  const filePath = './books.csv';
+  fs.createReadStream(filePath)
+    .pipe(csv({
+      separator: ';',
+      quote: '"',
+      escape: '"',
+      headers: ['ISBN', 'Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher', 'Image-URL-S', 'Image-URL-M', 'Image-URL-L']
+    }))
+    .on('data', (data) => {
+      const title = data['Book-Title'];
+      const imageLink = data['Image-URL-S'];
+      if (title && imageLink) {
+        results.push({
+          title,
+          imageLink
+        });
+      }
+    })
+    .on('end', () => {
+      console.log('CSV file successfully processed');
+      res.json(results);
+    })
+    .on('error', (err) => {
+      console.error('Error reading CSV file:', err);
+      res.status(500).json({ error: 'Failed to read CSV file' });
+    });
+});
+
+app.post('/api/recommendations', (req, res) => {
+  const { bookName } = req.body;
+  const userPreferences = JSON.stringify({ bookName });
+  const pythonProcess = spawn('python', ['C:\\Users\\pippa\\Desktop\\book recommendation\\backend\\test.py', userPreferences]);
+
+  let dataString = '';
+  pythonProcess.stdout.on('data', (data) => {
+    dataString += data.toString();
+  });
+
+  pythonProcess.stdout.on('end', () => {
+    try {
+      const recommendations = JSON.parse(dataString);
+      res.json({ recommendations });
+    } catch (error) {
+      console.error('Error parsing JSON:', error);
+      res.status(500).json({ error: 'Failed to parse recommendations' });
+    }
+  });
+
+  pythonProcess.stderr.on('data', (data) => {
+    console.error(`stderr: ${data}`);
+  });
+
+  pythonProcess.on('close', (code) => {
+    console.log(`child process exited with code ${code}`);
+  });
+});
+
+app.listen(port,function(){
+  console.log('server running on',port)
+})
+
+
+
+----------------------------------------------------------------------------------------------------
+
+import json
+import pandas as pd
+from collections import Counter
+
+# Load the data
+books = pd.read_csv(r"./filtered_Books.csv", delimiter=';', on_bad_lines='warn', encoding='ISO-8859-1')
+ratings = pd.read_csv(r"filtered_Book-Ratings.csv", delimiter=';', on_bad_lines='warn', encoding='ISO-8859-1')
+
+# Preprocess the data
+books['ISBN'] = books['ISBN'].str.upper()
+books.drop_duplicates(keep='last', inplace=True)
+books.reset_index(drop=True, inplace=True)
+
+
+# Preprocess the ratings data
+ratings['ISBN'] = ratings['ISBN'].str.upper()
+ratings.drop_duplicates(keep='last', inplace=True)
+ratings.reset_index(drop=True, inplace=True)
+
+# Merge the data
+dataset = pd.merge(books, ratings, on='ISBN', how='inner')
+#books = dataset.drop_duplicates(subset='ISBN')
+# Save the sampled dataset to a new CSV file
+# Create the pivot table
+popularity_threshold = 50
+user_count = dataset['User-ID'].value_counts()
+data = dataset[dataset['User-ID'].isin(user_count[user_count >= popularity_threshold].index)]
+rat_count = data['Book-Rating'].value_counts()
+data = data[data['Book-Rating'].isin(rat_count[rat_count >= popularity_threshold].index)]
+matrix = data.pivot_table(index='User-ID', columns='ISBN', values='Book-Rating').fillna(0)
+average_rating = pd.DataFrame(dataset.groupby('ISBN')['Book-Rating'].mean())
+average_rating['ratingCount'] = pd.DataFrame(dataset.groupby('ISBN')['Book-Rating'].count())
+average_rating.sort_values('ratingCount', ascending=False).head()
+
+# Define the recommendation function
+def get_recommendations(book_name):
+    isbn = books.loc[books['Book-Title'] == book_name].reset_index(drop=True).iloc[0]['ISBN']
+    # Ensure the ISBN is in the matrix
+    row = matrix[isbn]
+    correlation = pd.DataFrame(matrix.corrwith(row), columns=['Pearson Corr'])
+    corr = correlation.join(average_rating['ratingCount'])
+    res = corr.sort_values('Pearson Corr', ascending=False).head(6)[1:].index
+    corr_books = pd.merge(pd.DataFrame(res, columns=['ISBN']), books[['ISBN', 'Book-Title', 'Image-URL-L']], on='ISBN')
+    recommendations = [{"title": row['Book-Title'], "image_url": row['Image-URL-L']} for index, row in corr_books.iterrows()]
+    return recommendations
+
+
+import sys
+user_preferences = json.loads(sys.argv[1])
+book_name = user_preferences['bookName']
+recommendations = get_recommendations(book_name)
+
+#recommendations = get_recommendations("Harry Potter and the Sorcerer's Stone (Harry Potter (Paperback))")
+
+# Output recommendations as JSON
+print(json.dumps(recommendations))
+
+Book.js--->
+
+// import { useParams } from 'react-router-dom';
+// function Book() {
+//   const { bookName } = useParams();
+//   return (
+//     <h1>{bookName}</h1>
+//   );
+// }
+
+// export default Book;
+
+import React, { useEffect,useState } from 'react';
+import { useParams } from 'react-router-dom';
+import './book.css';
+
+function Book() {
+  const [details, setDetails] = useState([]);
+  const { bookName } = useParams();
+  //const bookName = "The Giving Tree"
+  useEffect(() => {
+    if (bookName) {
+      search(bookName);
+    }
+  }, [bookName]);
+  
+  
+  const search = async(bookName)=>{
+    try {
+          const response = await fetch(`http://localhost:5000/api/search?bookName=${encodeURIComponent(bookName)}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+    
+          if (!response.ok) {
+            throw new Error('Failed to fetch recommendations');
+          }
+          const data = await response.json();
+          if(!data)
+            console.log("empty");
+          console.log(data);
+          setDetails(data);
+
+        } catch (error) {
+          console.error('Error fetching recommendations:', error);
+        }
+}
+  return (
+    <div>
+    {details.length > 0 ? (
+    <div className="book-container">
+      <div className="book-cover">
+      <img src={details[0]['Image-URL-L']} alt="Book Cover" />
+      </div>
+      <div className="book-info">
+        <h1 className="book-title">{bookName}</h1>
+        <p className="author-name">Author Name: {details[0]['Book-Author']}</p>
+        <p className="publisher">Published by :{details[0]['Publisher']}</p>
+        <p className="details">Published Year : {details[0]['Year-Of-Publication']}</p>
+        </div>
+        </div>
+      )
+        :
+        (
+        <h1 className="book-title">{bookName}</h1>
+        )
+      }
+
+    </div>
+  );
+}
+
+export default Book;
+
+
+Home.js --->
+
+import React, { useEffect, useState} from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+
+function Home(){
+    const [bookName, setBookName] = useState('');
+    const [recommendations, setRecommendations] = useState([]);
+    const [books, setBooks] = useState([]);
+    const [isLoading, setIsLoading] = useState(false); // Track loading state
+  
+  
+  
+    // Fetch books on component mount
+    // Empty dependency array ensures this runs only once on mount
+  
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+  
+      try {
+        //setIsLoading(true);
+        const response = await fetch('http://localhost:5000/api/recommendations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ bookName }),
+        });
+  
+        if (!response.ok) {
+          throw new Error('Failed to fetch recommendations');
+        }
+  
+        const data = await response.json();
+        setRecommendations(data.recommendations);
+      } catch (error) {
+        console.error('Error fetching recommendations:', error);
+      }
+    //   setRecommendations([{
+    //     "title": "Toilet Learning : The Picture Book Technique for Children and Parents",
+    //     "image_url": "http://images.amazon.com/images/P/0316542377.01.LZZZZZZZ.jpg"
+    //   },
+    //   {
+    //     "title": "Kingmaker's Sword (The Rune Blade Trilogy, Book 1)",
+    //     "image_url": "http://images.amazon.com/images/P/0061056294.01.LZZZZZZZ.jpg"
+    //   },
+    //   {
+    //     "title": "Prince of Demons (Renshai Chronicles/Mickey Zucker Reichert, Vol 2)",
+    //     "image_url": "http://images.amazon.com/images/P/0886777151.01.LZZZZZZZ.jpg"
+    //   },
+    //   {
+    //     "title": "Pediatric Basic Life Support, 1997-1999",
+    //     "image_url": "http://images.amazon.com/images/P/0874936225.01.LZZZZZZZ.jpg"
+    //   },
+    //   {
+    //     "title": "The Everything Games Book: Hundreds of Classic Games for All Ages (The Everything)",
+    //     "image_url": "http://images.amazon.com/images/P/1558506438.01.LZZZZZZZ.jpg"
+    //   }
+    // ])
+    };
+  
+    const truncateTitle = (title, maxLength) => {
+      if (title.length > maxLength) {
+        return title.substring(0, maxLength) + '...'; // Adjust to append ellipsis or any text
+      }
+      return title;
+    };
+  
+    return (
+      <div className="App">
+        <header>
+          <h1>BookQuery</h1>
+        </header>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={bookName}
+            onChange={(e) => setBookName(e.target.value)}
+            placeholder="Enter book name"
+          />
+          <button type="submit">Submit</button>
+        </form>
+  
+        {/* Recommendation section */}
+        <div className="book-list">
+          {isLoading ? (
+            <p>Loading books...</p>
+          ) : (
+            <ul>
+              {recommendations.map((book, index) => (
+                 
+                <div key={index} className="book-item">
+                  <Link to={`/${book.title}`}>
+                <img src={book.image_url} alt={book.title}/>
+                <p>{truncateTitle(book.title, 30)}</p>
+                </Link>
+                </div>
+                
+                
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
+}
+
+export default Home;
+
+backend-->
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const { spawn } = require('child_process');
+const fs = require('fs');
+const csv = require('csv-parser');
+const app = express();
+const port = 5000;
+
+app.use(cors());
+app.use(bodyParser.json());
+
+app.get('/api/books', (req, res) => {
+  const results = [];
+  const filePath = './Popular_Books.csv';
+  fs.createReadStream(filePath)
+    .pipe(csv({
+      separator: ';',
+      quote: '"',
+      escape: '"',
+      headers: ['ISBN', 'Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher', 'Image-URL-S', 'Image-URL-M', 'Image-URL-L']
+    }))
+    .on('data', (data) => {
+      const title = data['Book-Title'];
+      const imageLink = data['Image-URL-L'];
+      if (title && imageLink) {
+        results.push({
+          title,
+          imageLink
+        });
+      }
+    })
+    .on('end', () => {
+      console.log('CSV file successfully processed');
+      res.json(results);
+    })
+    .on('error', (err) => {
+      console.error('Error reading CSV file:', err);
+      res.status(500).json({ error: 'Failed to read CSV file' });
+    });
+});
+
+app.post('/api/recommendations', (req, res) => {
+  const { bookName } = req.body;
+  const userPreferences = JSON.stringify({ bookName });
+  const pythonProcess = spawn('python', ['./test.py', userPreferences]);
+
+  let dataString = '';
+  pythonProcess.stdout.on('data', (data) => {
+    dataString += data.toString();
+  });
+
+  pythonProcess.stdout.on('end', () => {
+    try {
+      const recommendations = JSON.parse(dataString);
+      res.json({ recommendations });
+    } catch (error) {
+      console.error('Error parsing JSON:', error);
+      res.status(500).json({ error: 'Failed to parse recommendations' });
+    }
+  });
+
+  pythonProcess.stderr.on('data', (data) => {
+    console.error(`stderr: ${data}`);
+  });
+
+  pythonProcess.on('close', (code) => {
+    console.log(`child process exited with code ${code}`);
+  });
+});
+
+app.listen(port,function(){
+  console.log('server running on',port)
+})
+
+const books = [];
+
+
+
+// Read CSV file and populate books array
+fs.createReadStream('./Books.csv')
+  .pipe(csv({
+    separator: ';',
+    quote: '"',
+    escape: '"',
+  }))
+  .on('data', (row) => {
+    books.push(row); // Push each row (book data) into the books array
+  })
+  .on('end', () => {
+    console.log('CSV file successfully processed');
+    console.log('Total books:', books.length);
+  })
+  .on('error', (err) => {
+    console.error('Error reading CSV file:', err);
+  });
+
+// Search endpoint
+app.get('/api/search', (req, res) => {
+  const { bookName } = req.query; // Assuming bookName parameter is passed like '/api/search?bookName=bookTitle'
+  
+  if (!bookName) {
+    return res.status(400).json({ error: 'bookName parameter "bookName" is required' });
+  }
+
+  // Filter books based on the bookName
+  const results = books.filter(book =>
+    book['Book-Title'].toLowerCase().includes(bookName.toLowerCase())
+  );
+
+  console.log('Search bookName:', bookName);
+  console.log('Search results:', results);
+
+  res.json(results);
+});
+
+

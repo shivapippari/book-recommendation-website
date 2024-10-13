@@ -1,0 +1,26 @@
+1. header on top
+2. click on book to that page
+3. only unique books
+4. popular books display
+5. reducing python code time (reducing dataset)
+6. 
+
+
+0312195516    723
+059035342X    571
+0312278586    474
+0156027321    462
+0312291639    354
+0439064872    351
+043935806X    334
+0312305060    294
+0439136369    226
+0312282990    198
+
+-----> popular books
+ISBN;Book-Title;Book-Author;Year-Of-Publication;Publisher;Image-URL-L
+0312195516,The Red Tent (Bestselling Backlist),Anita Diamant,1998,Picador USA,http://images.amazon.com/images/P/0312195516.01.LZZZZZZZ.jpg,131891,4
+059035342X,Harry Potter and the Sorcerer's Stone (Harry Potter (Paperback)),J. K. Rowling,1999,Arthur A. Levine Books,http://images.amazon.com/images/P/059035342X.01.LZZZZZZZ.jpg,14982,0
+0312278586;The Nanny Diaries: A Novel;Emma McLaughlin;2002;St. Martin's Press;http://images.amazon.com/images/P/0312278586.01.LZZZZZZZ.jpg
+0156027321;Life of Pi;Yann Martel;2003;Harvest Books;http://images.amazon.com/images/P/0156027321.01.LZZZZZZZ.jpg
+0312291639;The Nanny Diaries: A Novel;Emma McLaughlin;2003;St. Martin's Griffin;http://images.amazon.com/images/P/0312291639.01.LZZZZZZZ.jpg
